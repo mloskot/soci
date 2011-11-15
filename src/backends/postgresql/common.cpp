@@ -7,9 +7,10 @@
 
 #include "common.h"
 #include <soci-backend.h>
+#include <algorithm>
+#include <cassert>
 #include <cstdlib>
 #include <ctime>
-
 
 namespace // anonymous
 {
@@ -30,7 +31,6 @@ long parse10(char const * & p1, char * & p2, char const * msg)
 }
 
 } // namespace anonymous
-
 
 void soci::details::postgresql::parse_std_tm(char const * buf, std::tm & t)
 {
@@ -108,4 +108,39 @@ double soci::details::postgresql::string_to_double(char const * buf)
     {
         throw soci_error("Cannot convert data.");
     }
+}
+
+bool soci::details::postgresql::string_to_bool(char const* buf)
+{
+    assert(buf);
+
+    // Try additional conversion from boolean
+    // http://www.postgresql.org/docs/9.0/interactive/datatype-boolean.html
+    // See also string_to_integer(), can cast SQL boolean to integer
+
+    if (buf && buf[1] == '\0')
+    {
+        if (buf[0] == '1' || buf[0] == 't' || buf[0] == 'y')
+            return true;
+        else if (buf[0] == '0' || buf[0] == 'f' || buf[0] == 'n')
+            return false;
+        else
+            throw soci_error("Invalid boolean literal value.");
+    }
+    else if (buf && buf[1] != '\0')
+    {
+        std::string v(buf);
+        std::transform(v.begin(), v.end(), v.begin(), tolower);
+
+        if (v == "true" || v == "yes" || v == "on")
+            return true;
+        else if (v == "false" || v == "no" || v == "off")
+            return false;
+        else
+            throw soci_error("Invalid boolean literal value.");
+    }
+    else
+    {
+        throw soci_error("Cannot convert data.");
+    }    
 }

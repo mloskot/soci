@@ -53,6 +53,7 @@ T string_to_integer(char const * buf)
     {
         // try additional conversion from boolean
         // (PostgreSQL gives 't' or 'f' for boolean results)
+        // See also string_to_bool()
 
         if (buf[0] == 't' && buf[1] == '\0')
         {
@@ -96,6 +97,7 @@ T string_to_unsigned_integer(char const * buf)
     {
         // try additional conversion from boolean
         // (PostgreSQL gives 't' or 'f' for boolean results)
+        // See also string_to_bool()
 
         if (buf[0] == 't' && buf[1] == '\0')
         {
@@ -113,7 +115,10 @@ T string_to_unsigned_integer(char const * buf)
 }
 
 // helper function for parsing doubles
-double string_to_double(char const * buf);
+double string_to_double(char const* buf);
+
+// helper function for parsing boolean
+bool string_to_bool(char const* buf);
 
 // helper function for parsing datetime values
 void parse_std_tm(char const * buf, std::tm & t);

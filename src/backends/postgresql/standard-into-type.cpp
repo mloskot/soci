@@ -83,6 +83,12 @@ void postgresql_standard_into_type_backend::post_fetch(
 
         switch (type_)
         {
+        case x_bool:
+            {
+                bool* dest = static_cast<bool*>(data_);
+                *dest = string_to_bool(buf);
+            }
+            break;
         case x_char:
             {
                 char * dest = static_cast<char *>(data_);

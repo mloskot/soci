@@ -517,6 +517,10 @@ void postgresql_statement_backend::describe_column(int colNum, data_type & type,
         break;
 
     case 16:   // bool
+    case 1560: //bit
+        type = dt_bool;
+        break;
+
     case 21:   // int2
     case 23:   // int4
         type = dt_integer;
