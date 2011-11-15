@@ -42,6 +42,20 @@ struct exchange_traits
 };
 
 template <>
+struct exchange_traits<bool>
+{
+    typedef basic_type_tag type_family;
+    enum { x_type = x_bool };
+};
+
+template <>
+struct exchange_traits<char>
+{
+    typedef basic_type_tag type_family;
+    enum { x_type = x_char };
+};
+
+template <>
 struct exchange_traits<short>
 {
     typedef basic_type_tag type_family;
@@ -53,13 +67,6 @@ struct exchange_traits<int>
 {
     typedef basic_type_tag type_family;
     enum { x_type = x_integer };
-};
-
-template <>
-struct exchange_traits<char>
-{
-    typedef basic_type_tag type_family;
-    enum { x_type = x_char };
 };
 
 template <>
