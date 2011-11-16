@@ -125,6 +125,26 @@ public:
             static_cast<exchange_type>(exchange_traits<T>::x_type), ind) {}
 };
 
+template <>
+class into_type<binary_string> : public standard_into_type
+{
+public:
+
+    static std::size_t const default_size = 10 * 1024;
+
+    into_type(binary_string& b)
+        : standard_into_type(&b, x_binary_string), binary_string_(&b) { b.data_.reserve(default_size); }
+
+    into_type(binary_string& b, indicator & ind)
+        : standard_into_type(&b, x_binary_string, ind), binary_string_(&b) { b.data_.reserve(default_size); }
+
+    into_type(binary_string& b, indicator& ind, std::size_t size)
+        : standard_into_type(&b, x_binary_string, ind), binary_string_(&b) { b.data_.reserve(size); }
+
+private:
+    binary_string* binary_string_;
+};
+
 template <typename T>
 class into_type<std::vector<T> > : public vector_into_type
 {

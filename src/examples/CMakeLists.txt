@@ -1,0 +1,5 @@
+include_directories(${CMAKE_SOURCE_DIR}/core)
+include_directories(${CMAKE_SOURCE_DIR}/backends/postgresql)
+include_directories(${POSTGRESQL_INCLUDE_DIR})
+add_executable(soci_example1 example1.cpp)
+target_link_libraries(soci_example1 soci_core-static soci_postgresql-static ${POSTGRESQL_LIBRARIES})

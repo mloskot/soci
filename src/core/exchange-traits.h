@@ -10,6 +10,7 @@
 
 #include "type-conversion-traits.h"
 #include "soci-backend.h"
+#include "binary.h"
 // std
 #include <ctime>
 #include <string>
@@ -111,6 +112,13 @@ struct exchange_traits<std::tm>
 {
     typedef basic_type_tag type_family;
     enum { x_type = x_stdtm };
+};
+
+template <>
+struct exchange_traits<binary_string>
+{
+    typedef basic_type_tag type_family;
+    enum { x_type = x_binary_string };
 };
 
 template <typename T>

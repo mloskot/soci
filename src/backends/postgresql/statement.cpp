@@ -210,15 +210,11 @@ postgresql_statement_backend::execute(int number)
              numberOfExecutions = hasUseElements_ ? 1 : number;
         }
 
-        if ((useByPosBuffers_.empty() == false) ||
-            (useByNameBuffers_.empty() == false))
+        if ((useByPosBuffers_.empty() == false) || (useByNameBuffers_.empty() == false))
         {
-            if ((useByPosBuffers_.empty() == false) &&
-                (useByNameBuffers_.empty() == false))
+            if ((useByPosBuffers_.empty() == false) && (useByNameBuffers_.empty() == false))
             {
-                throw soci_error(
-                    "Binding for use elements must be either by position "
-                    "or by name.");
+                throw soci_error("Binding for use elements must be either by position or by name.");
             }
 
             for (int i = 0; i != numberOfExecutions; ++i)
@@ -227,14 +223,11 @@ postgresql_statement_backend::execute(int number)
 
                 if (useByPosBuffers_.empty() == false)
                 {
-                    // use elements bind by position
-                    // the map of use buffers can be traversed
+                    // use elements bind by position the map of use buffers can be traversed
                     // in its natural order
 
-                    for (UseByPosBuffersMap::iterator
-                             it = useByPosBuffers_.begin(),
-                             end = useByPosBuffers_.end();
-                         it != end; ++it)
+                    for (UseByPosBuffersMap::iterator it = useByPosBuffers_.begin(),
+                         end = useByPosBuffers_.end(); it != end; ++it)
                     {
                         char ** buffers = it->second;
                         paramValues.push_back(buffers[i]);
@@ -244,16 +237,13 @@ postgresql_statement_backend::execute(int number)
                 {
                     // use elements bind by name
 
-                    for (std::vector<std::string>::iterator
-                             it = names_.begin(), end = names_.end();
+                    for (std::vector<std::string>::iterator it = names_.begin(), end = names_.end();
                          it != end; ++it)
                     {
-                        UseByNameBuffersMap::iterator b
-                            = useByNameBuffers_.find(*it);
+                        UseByNameBuffersMap::iterator b = useByNameBuffers_.find(*it);
                         if (b == useByNameBuffers_.end())
                         {
-                            std::string msg(
-                                "Missing use element for bind by name (");
+                            std::string msg("Missing use element for bind by name (");
                             msg += *it;
                             msg += ").";
                             throw soci_error(msg);

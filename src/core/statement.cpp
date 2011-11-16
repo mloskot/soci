@@ -11,6 +11,7 @@
 #include "into-type.h"
 #include "use-type.h"
 #include "values.h"
+#include "binary.h"
 #include <ctime>
 
 #ifdef _MSC_VER
@@ -578,6 +579,13 @@ namespace details
 {
 
 // Map data_types to stock types for dynamic result set support
+
+
+template<>
+void statement_impl::bind_into<dt_binary_string>()
+{
+	into_row<binary_string>();
+}
 
 template<>
 void statement_impl::bind_into<dt_string>()

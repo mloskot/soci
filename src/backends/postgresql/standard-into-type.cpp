@@ -9,6 +9,7 @@
 #include "soci-postgresql.h"
 #include "common.h"
 #include "rowid.h"
+#include "binary.h"
 #include "blob.h"
 #include <libpq/libpq-fs.h> // libpq
 #include <cctype>
@@ -77,9 +78,11 @@ void postgresql_standard_into_type_backend::post_fetch(
             }
         }
 
-        // raw data, in text format
-        char const * buf = PQgetvalue(statement_.result_,
-            statement_.currentRow_, pos);
+        // raw data, in text format or binary format
+        char const* buf = PQgetvalue(statement_.result_, statement_.currentRow_, pos);
+        int const buf_size = PQgetlength(statement_.result_, statement_.currentRow_, pos);
+        bool const is_format_binary = PQfformat(statement_.result_, pos) == 1;
+        //int const data_type_size = PQfsize(statement_.result_, pos);
 
         switch (type_)
         {
@@ -93,6 +96,14 @@ void postgresql_standard_into_type_backend::post_fetch(
             {
                 std::string * dest = static_cast<std::string *>(data_);
                 dest->assign(buf);
+            }
+            break;
+        case x_binary_string:
+            {
+                // TODO: is binary
+                std::uint8_t const* buf_begin = reinterpret_cast<std::uint8_t const*>(buf);
+                binary_string* dest = static_cast<binary_string*>(data_);
+                dest->data_.assign(buf_begin, buf_begin + buf_size);
             }
             break;
         case x_short:

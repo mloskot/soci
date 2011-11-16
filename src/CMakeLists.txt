@@ -97,3 +97,4 @@ include_directories(${SOCI_SOURCE_DIR}/core)
 
 add_subdirectory(core)
 add_subdirectory(backends)
+add_subdirectory(examples)
