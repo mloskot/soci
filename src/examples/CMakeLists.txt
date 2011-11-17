@@ -1,3 +1,4 @@
+include_directories(${Boost_INCLUDE_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/core)
 include_directories(${CMAKE_SOURCE_DIR}/backends/postgresql)
 include_directories(${POSTGRESQL_INCLUDE_DIR})

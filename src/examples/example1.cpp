@@ -5,6 +5,10 @@
 #include <cstdint>
 #include <vector>
 #include <exception>
+#include <boost/geometry/geometry.hpp>
+#include <boost/geometry/geometries/geometries.hpp>
+#include <boost/geometry/domains/gis/io/wkt/wkt.hpp>
+#include <boost/geometry/extensions/gis/io/wkb/read_wkb.hpp>
 using namespace soci;
 using namespace std;
 
@@ -49,6 +53,14 @@ int main()
         sql << "select varlenbin21 from soci_data_types limit 1", into(varlenbin21);
 
         clog << "varlenbin21=" << varlenbin21.data_.size() << endl;
+
+        boost::geometry::model::point<float, 2, boost::geometry::cs::geographic<boost::geometry::degree> > p0;
+        if (!boost::geometry::read_wkb(varlenbin21.data_.begin(), varlenbin21.data_.end(), p0))
+            throw std::runtime_error("read_wkb failed");
+
+        clog << boost::geometry::wkt(p0) << std::endl;
+
+
         //clog << "b=" << b << endl;
         //clog << "i2=" << i2 << endl;
         //clog << "i4=" << i4 << endl;
