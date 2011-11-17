@@ -261,9 +261,7 @@ postgresql_statement_backend::execute(int number)
 
 #ifdef SOCI_POSTGRESQL_NOPREPARE
 
-                result_ = PQexecParams(session_.conn_, query_.c_str(),
-                    static_cast<int>(paramValues.size()),
-                    NULL, &paramValues[0], NULL, NULL, 0);
+                result_ = PQexecParams(session_.conn_, query_.c_str(), static_cast<int>(paramValues.size()), NULL, &paramValues[0], NULL, NULL, 0);
 
 #else
 
@@ -271,18 +269,14 @@ postgresql_statement_backend::execute(int number)
                 {
                     // this query was separately prepared
 
-                    result_ = PQexecPrepared(session_.conn_,
-                        statementName_.c_str(),
-                        static_cast<int>(paramValues.size()),
-                        &paramValues[0], NULL, NULL, 0);
+                    result_ = PQexecPrepared(session_.conn_, statementName_.c_str(), static_cast<int>(paramValues.size()), &paramValues[0], NULL, NULL, 0);
                 }
                 else // stType_ == st_one_time_query
                 {
                     // this query was not separately prepared and should
                     // be executed as a one-time query
 
-                    result_ = PQexecParams(session_.conn_, query_.c_str(),
-                        static_cast<int>(paramValues.size()),
+                    result_ = PQexecParams(session_.conn_, query_.c_str(), static_cast<int>(paramValues.size()),
                         NULL, &paramValues[0], NULL, NULL, 0);
                 }
 
@@ -331,12 +325,12 @@ postgresql_statement_backend::execute(int number)
             {
                 // this query was separately prepared
 
-                result_ = PQexecPrepared(session_.conn_,
-                    statementName_.c_str(), 0, NULL, NULL, NULL, 0);
+                result_ = PQexecPrepared(session_.conn_, statementName_.c_str(), 0, NULL, NULL, NULL, 0);
             }
             else // stType_ == st_one_time_query
             {
-                result_ = PQexec(session_.conn_, query_.c_str());
+                //result_ = PQexec(session_.conn_, query_.c_str());
+                result_ = PQexecParams(session_.conn_, query_.c_str(), 0, 0, 0, 0, 0, 1);
             }
 
 #endif // SOCI_POSTGRESQL_NOPREPARE
