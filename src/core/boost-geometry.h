@@ -52,10 +52,10 @@ struct type_conversion<boost::geometry::model::point<CoordinateType, DimensionCo
     }
 };
 
-template<typename CoordinateType>
-struct type_conversion<boost::geometry::model::d2:point_xy<CoordinateType>>
+template<typename CoordinateType, typename CoordinateSystem>
+struct type_conversion<boost::geometry::model::d2::point_xy<CoordinateType, CoordinateSystem>>
 {
-    typedef boost::geometry::model::d2:point_xy<CoordinateType> target_type;
+    typedef boost::geometry::model::d2::point_xy<CoordinateType, CoordinateSystem> target_type;
     typedef binary_string base_type;
 
     static void from_base(base_type const& in, indicator ind, target_type& out)

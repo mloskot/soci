@@ -46,6 +46,8 @@ if(Boost_FOUND)
 	list(APPEND SOCI_COMPILE_DEFINITIONS "HAVE_BOOST_DATE_TIME=1")
   endif()
 
+  include_directories(${Boost_INCLUDE_DIR}) # FIXME: Problems with Boost set as property
+	
   set_property(DIRECTORY ${CMAKE_SOURCE_DIR}
     PROPERTY COMPILE_DEFINITIONS ${SOCI_COMPILE_DEFINITIONS})
 
@@ -53,7 +55,6 @@ if(Boost_FOUND)
 
   set_property(DIRECTORY ${CMAKE_SOURCE_DIR}
     PROPERTY INCLUDE_DIRECTORIES ${Boost_INCLUDE_DIRS})
-
 endif()
 
 # Core source files
