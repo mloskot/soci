@@ -6,10 +6,12 @@
 #include <cstdint>
 #include <vector>
 #include <exception>
+#include <boost/geometry/core/cs.hpp>
 #include <boost/geometry/geometry.hpp>
 #include <boost/geometry/geometries/geometries.hpp>
 #include <boost/geometry/domains/gis/io/wkt/wkt.hpp>
 #include <boost/geometry/extensions/gis/io/wkb/read_wkb.hpp>
+#include <boost/geometry/extensions/gis/io/wkb/utility.hpp>
 using namespace soci;
 using namespace std;
 
@@ -61,8 +63,9 @@ int main()
         }
 
         {
-            boost::geometry::model::d2::point_xy<double> p0;
-            //boost::geometry::model::d2::point_xy<int> p1;
+            boost::geometry::model::point<float, 2,  boost::geometry::cs::geographic<boost::geometry::degree>> p0;
+            boost::geometry::model::d2::point_xy<double> p1;
+            //boost::geometry::model::d2::point_xy<double> p1;
             sql << "select varlenbin21 from soci_data_types limit 1", into(p1);
             clog << boost::geometry::wkt(p0) << std::endl;
         }

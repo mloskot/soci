@@ -18,27 +18,58 @@
 namespace soci
 {
 
-template<>
-struct type_conversion<boost::geometry::model::d2::point_xy<double> >
+namespace detail 
 {
 
+template <typename Iterator, typename Geometry>
+void make_geometry(Iterator begin, Iterator end, Geometry& out)
+{
+    if (!boost::geometry::read_wkb(begin, end, out))
+        throw soci_error("Failed to make geometry from well-known-binary stream");
+}
+
+} // namespace detail 
+
+template<typename CoordinateType, std::size_t DimensionCount, typename CoordinateSystem>
+struct type_conversion<boost::geometry::model::point<CoordinateType, DimensionCount, CoordinateSystem>>
+{
+
+    typedef boost::geometry::model::point<CoordinateType, DimensionCount, CoordinateSystem> target_type;
     typedef binary_string base_type;
 
-    static void from_base(base_type const& in, indicator ind, boost::geometry::model::d2::point_xy<double>& out)
+    static void from_base(base_type const& in, indicator ind, target_type& out)
     {
         if (ind == i_null)
-        {
             throw soci_error("Null value not allowed for this type");
-        }
 
-        if (!boost::geometry::read_wkb(in.data_.begin(), in.data_.end(), out))
-            throw std::runtime_error("Failed to read geometry from binary stream");
+        detail::make_geometry(in.data_.begin(), in.data_.end(), out);
     }
 
-    static void to_base(boost::geometry::model::d2::point_xy<double> const& in, base_type& out, indicator& ind)
+    static void to_base(target_type const& in, base_type& out, indicator& ind)
     {
         out.data_.clear(); //out = ... //write wkb
-        ind = i_ok;
+        ind = i_null; // i_ok
+    }
+};
+
+template<typename CoordinateType>
+struct type_conversion<boost::geometry::model::d2:point_xy<CoordinateType>>
+{
+    typedef boost::geometry::model::d2:point_xy<CoordinateType> target_type;
+    typedef binary_string base_type;
+
+    static void from_base(base_type const& in, indicator ind, target_type& out)
+    {
+        if (ind == i_null)
+            throw soci_error("Null value not allowed for this type");
+
+        detail::make_geometry(in.data_.begin(), in.data_.end(), out);
+    }
+
+    static void to_base(target_type const& in, base_type& out, indicator& ind)
+    {
+        out.data_.clear(); //out = ... //write wkb
+        ind = i_null; // i_ok
     }
 };
 
