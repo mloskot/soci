@@ -56,6 +56,8 @@
 #include "boost-optional.h"
 #include "boost-tuple.h"
 #include "boost-gregorian-date.h"
+// TODO: guard with SOCI_USE_BOOST_GEOMETRY
+#include "boost-geometry.h"
 #endif // SOCI_USE_BOOST
 
 #endif // SOCI_H_INCLUDED

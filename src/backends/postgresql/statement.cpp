@@ -330,7 +330,8 @@ postgresql_statement_backend::execute(int number)
             else // stType_ == st_one_time_query
             {
                 //result_ = PQexec(session_.conn_, query_.c_str());
-                result_ = PQexecParams(session_.conn_, query_.c_str(), 0, 0, 0, 0, 0, 1);
+                int const is_binary_format = 1;
+                result_ = PQexecParams(session_.conn_, query_.c_str(), 0, 0, 0, 0, 0, is_binary_format);
             }
 
 #endif // SOCI_POSTGRESQL_NOPREPARE

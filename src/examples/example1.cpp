@@ -1,5 +1,6 @@
 #include <soci.h>
 #include <soci-postgresql.h>
+#include <boost-geometry.h>
 #include <iostream>
 #include <string>
 #include <cstdint>
@@ -35,7 +36,7 @@ int main()
 {
     try
     {
-        session sql(soci::postgresql, "dbname=mloskot user=mloskot password=pantera");
+        session sql(soci::postgresql, "dbname=mloskot user=mloskot");
         bool create_table(false);
         if (create_table)
         {
@@ -49,16 +50,24 @@ int main()
         long long i8(-1);
         
         //typedef std::vector<std::uint8_t> binary_t;
-        soci::binary_string varlenbin21;
-        sql << "select varlenbin21 from soci_data_types limit 1", into(varlenbin21);
+        {
+            soci::binary_string varlenbin21;
+            sql << "select varlenbin21 from soci_data_types limit 1", into(varlenbin21);
+            clog << "varlenbin21=" << varlenbin21.data_.size() << endl;
+            boost::geometry::model::d2::point_xy<double> p0;
+            if (!boost::geometry::read_wkb(varlenbin21.data_.begin(), varlenbin21.data_.end(), p0))
+                throw std::runtime_error("read_wkb failed");
+            clog << boost::geometry::wkt(p0) << std::endl;
+        }
 
-        clog << "varlenbin21=" << varlenbin21.data_.size() << endl;
+        {
+            boost::geometry::model::d2::point_xy<double> p0;
+            //boost::geometry::model::d2::point_xy<int> p1;
+            sql << "select varlenbin21 from soci_data_types limit 1", into(p1);
+            clog << boost::geometry::wkt(p0) << std::endl;
+        }
 
-        boost::geometry::model::point<float, 2, boost::geometry::cs::geographic<boost::geometry::degree> > p0;
-        if (!boost::geometry::read_wkb(varlenbin21.data_.begin(), varlenbin21.data_.end(), p0))
-            throw std::runtime_error("read_wkb failed");
-
-        clog << boost::geometry::wkt(p0) << std::endl;
+        
 
 
         //clog << "b=" << b << endl;
