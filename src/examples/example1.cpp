@@ -1,19 +1,28 @@
+// Example working with OGC geometries from PostgreSQL/PostGIS database
+// into Boost.Geometry models fetched directly in binary format.
+// For sample output, see at the bottom.
+#include <cstdint>
+#include <deque>
+#include <exception>
+#include <iostream>
+#include <string>
+#include <vector>
 #include <soci.h>
 #include <soci-postgresql.h>
 #include <boost-geometry.h>
-#include <iostream>
-#include <string>
-#include <cstdint>
-#include <vector>
-#include <exception>
 #include <boost/geometry/core/cs.hpp>
 #include <boost/geometry/geometry.hpp>
 #include <boost/geometry/geometries/geometries.hpp>
+#include <boost/geometry/geometries/point_xy.hpp>
+#include <boost/geometry/geometries/point.hpp>
+#include <boost/geometry/geometries/linestring.hpp>
+#include <boost/geometry/geometries/polygon.hpp>
 #include <boost/geometry/domains/gis/io/wkt/wkt.hpp>
 #include <boost/geometry/extensions/gis/io/wkb/read_wkb.hpp>
 #include <boost/geometry/extensions/gis/io/wkb/utility.hpp>
 using namespace soci;
 using namespace std;
+namespace bg = boost::geometry;
 
 void create_table_data_types(soci::session& sql)
 {
@@ -46,44 +55,111 @@ int main()
             insert_sample_data_types(sql);
         }
 
-        bool b(true);
-        short i2(-1);
-        int i4(-1);
-        long long i8(-1);
-        
-        // POINT
+        // Geometry as raw BYTEA allows user to parse it
         {
-            boost::geometry::model::point<float, 2,  boost::geometry::cs::geographic<boost::geometry::degree>> p0;
-            boost::geometry::model::d2::point_xy<double> p1;
-            boost::geometry::model::d2::point_xy<int> p2;
-            sql << "select varlenbin21 from soci_data_types limit 1", into(p0);
-            clog << boost::geometry::wkt(p0) << std::endl;
-            sql << "select varlenbin21 from soci_data_types limit 1", into(p1);
-            clog << boost::geometry::wkt(p1) << std::endl;
-            sql << "select varlenbin21 from soci_data_types limit 1", into(p2);
-            clog << boost::geometry::wkt(p2) << std::endl;
+            bg::model::point<float, 2,  bg::cs::geographic<bg::degree>> p0;
+            bg::model::d2::point_xy<double> p1;
+            bg::model::d2::point_xy<int> p2;
+            sql << "SELECT varlenbin21 FROM soci_data_types LIMIT 1", into(p0);
+            clog << bg::wkt(p0) << std::endl;
+            sql << "SELECT varlenbin21 FROM soci_data_types LIMIT 1", into(p1);
+            clog << bg::wkt(p1) << std::endl;
+            sql << "SELECT varlenbin21 FROM soci_data_types LIMIT 1", into(p2);
+            clog << bg::wkt(p2) << std::endl;
         }
 
-        
+        typedef bg::model::point<double, 2,  bg::cs::geographic<bg::degree>> point0_t;
+        typedef bg::model::point<float, 2,  bg::cs::cartesian> point1_t;
+        typedef bg::model::d2::point_xy<int> point2_t;
 
+        // POINT
+        {
+            // TODO: currently, binary format is requested only in simple case, no use() support
+            //int id(1);
+            //sql << "SELECT ST_AsBinary(geom) FROM soci_geoms WHERE id=:id", into(p0), use(id);
 
-        //clog << "b=" << b << endl;
-        //clog << "i2=" << i2 << endl;
-        //clog << "i4=" << i4 << endl;
-        //clog << "i8=" << i8 << endl;
+            point0_t p0;
+            sql << "SELECT ST_AsBinary(geom) FROM soci_geoms WHERE id=1", into(p0);
+            clog << bg::wkt(p0) << std::endl;
 
-        //b = false;
-        //sql << "update soci_data_types set bool = :b", use(b, "b");
-        //
+            point1_t p1;
+            sql << "SELECT ST_AsBinary(geom) FROM soci_geoms WHERE id=1", into(p1);
+            clog << bg::wkt(p1) << std::endl;
 
-        //row r;
-        //sql << "select bool from soci_data_types limit 1", into(r);
-        //column_properties const& props = r.get_properties(0);
+            point2_t p2;
+            sql << "SELECT ST_AsBinary(geom) FROM soci_geoms WHERE id=1", into(p2);
+            clog << bg::wkt(p2) << std::endl;
+        }
 
-        //clog << "b=" << b << endl;
+        // LINESTRING
+        {
+            bg::model::linestring<point0_t> line0;
+            sql << "SELECT ST_AsBinary(geom) FROM soci_geoms WHERE id=2", into(line0);
+            clog << bg::wkt(line0) << std::endl;
+
+            bg::model::linestring<point1_t> line1;
+            sql << "SELECT ST_AsBinary(geom) FROM soci_geoms WHERE id=2", into(line1);
+            clog << bg::wkt(line1) << std::endl;
+
+            bg::model::linestring<point2_t> line2;
+            sql << "SELECT ST_AsBinary(geom) FROM soci_geoms WHERE id=2", into(line2);
+            clog << bg::wkt(line2) << std::endl;
+
+            // std::deque as non-default container
+            bg::model::linestring<point0_t, std::deque> deque0;
+            sql << "SELECT ST_AsBinary(geom) FROM soci_geoms WHERE id=2", into(deque0);
+            clog << bg::wkt(deque0) << std::endl;
+
+            bg::model::linestring<point1_t, std::deque> deque1;
+            sql << "SELECT ST_AsBinary(geom) FROM soci_geoms WHERE id=2", into(deque1);
+            clog << bg::wkt(deque1) << std::endl;
+
+            bg::model::linestring<point2_t, std::deque> deque2;
+            sql << "SELECT ST_AsBinary(geom) FROM soci_geoms WHERE id=2", into(deque2);
+            clog << bg::wkt(deque2) << std::endl;
+        }
+
+        // POLYGON
+        {
+            bg::model::polygon<point0_t> poly0;
+            sql << "SELECT ST_AsBinary(geom) FROM soci_geoms WHERE id=3", into(poly0);
+            clog << bg::wkt(poly0) << std::endl;
+
+            bg::model::polygon<point1_t> poly1;
+            sql << "SELECT ST_AsBinary(geom) FROM soci_geoms WHERE id=3", into(poly1);
+            clog << bg::wkt(poly1) << std::endl;
+
+            bg::model::polygon<point2_t> poly2;
+            sql << "SELECT ST_AsBinary(geom) FROM soci_geoms WHERE id=3", into(poly2);
+            clog << bg::wkt(poly2) << std::endl;
+        }
     }
     catch (exception const &e)
     {
         cerr << "Error: " << e.what() << '\n';
     }
 }
+
+// Geometry loaded from PostGIS samples:
+// http://postgis.org/documentation/manual-svn/using_postgis_dbmanagement.html#OpenGISWKBWKT
+// using the following inserts:
+//insert into soci_geoms (geom) values (st_GeometryFromText('POINT(0 0)', 4326));
+//insert into soci_geoms (geom) values (st_GeometryFromText('LINESTRING(0 0,1 1,1 2)', 4326));
+//insert into soci_geoms (geom) values (st_GeometryFromText('POLYGON((0 0,4 0,4 4,0 4,0 0),(1 1, 2 1, 2 2, 1 2,1 1))', 4326));
+
+// Sample output produced by this example:
+//POINT(1 2)
+//POINT(1 2)
+//POINT(1 2)
+//POINT(1 2)
+//POINT(1 2)
+//POINT(1 2)
+//LINESTRING(0 0,1 1,1 2)
+//LINESTRING(0 0,1 1,1 2)
+//LINESTRING(0 0,1 1,1 2)
+//LINESTRING(0 0,1 1,1 2)
+//LINESTRING(0 0,1 1,1 2)
+//LINESTRING(0 0,1 1,1 2)
+//POLYGON((0 0,4 0,4 4,0 4,0 0),(1 1,2 1,2 2,1 2,1 1))
+//POLYGON((0 0,4 0,4 4,0 4,0 0),(1 1,2 1,2 2,1 2,1 1))
+//POLYGON((0 0,4 0,4 4,0 4,0 0),(1 1,2 1,2 2,1 2,1 1))
