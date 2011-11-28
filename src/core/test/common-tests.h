@@ -387,7 +387,8 @@ void test2()
             auto_table_creator tableCreator(tc_.table_creator_1(sql));
             unsigned long seven(7);
             sql << "insert into soci_test(ul) values(:ul)", use(seven);
-            unsigned long ul(0);
+            //unsigned long ul(0);
+            int ul(0);
             sql << "select ul from soci_test", into(ul);
             assert(ul == 7);
         }

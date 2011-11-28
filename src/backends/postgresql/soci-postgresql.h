@@ -1,6 +1,8 @@
 //
-// Copyright (C) 2004-2008 Maciej Sobczak, Stephen Hutton
+// Copyright (C) 2011 Mateusz Loskot
+// Copyright (C) 2011 Artur Bać
 // Copyright (C) 2011 Gevorg Voskanyan
+// Copyright (C) 2004-2008 Maciej Sobczak, Stephen Hutton
 // Distributed under the Boost Software License, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
@@ -93,62 +95,53 @@ struct postgresql_vector_into_type_backend : details::vector_into_type_backend
 
 struct postgresql_standard_use_type_backend : details::standard_use_type_backend
 {
-    postgresql_standard_use_type_backend(postgresql_statement_backend & st)
-        : statement_(st), position_(0), buf_(NULL) {}
+    postgresql_standard_use_type_backend(postgresql_statement_backend& st)
+        : statement_(st), buf_(), data_(nullptr), type_(details::x_unknown), position_(0)  {}
 
-    virtual void bind_by_pos(int & position,
-        void * data, details::exchange_type type, bool readOnly);
-    virtual void bind_by_name(std::string const & name,
-        void * data, details::exchange_type type, bool readOnly);
+    virtual void bind_by_pos(int& position, void* data, details::exchange_type type,
+        bool readOnly);
+    virtual void bind_by_name(std::string const& name, void* data, details::exchange_type type,
+        bool readOnly);
 
-    virtual void pre_use(indicator const * ind);
-    virtual void post_use(bool gotData, indicator * ind);
-
+    virtual void pre_use(indicator const* ind);
+    virtual void post_use(bool gotData, indicator* ind);
     virtual void clean_up();
 
-    postgresql_statement_backend & statement_;
-
-    void * data_;
+    postgresql_statement_backend& statement_;
+    details::buffer_descriptor buf_;
+    void* data_;
+    std::string name_;
     details::exchange_type type_;
     int position_;
-    std::string name_;
-    char * buf_;
 };
 
 struct postgresql_vector_use_type_backend : details::vector_use_type_backend
 {
-    postgresql_vector_use_type_backend(postgresql_statement_backend & st)
-        : statement_(st), position_(0) {}
-
-    virtual void bind_by_pos(int & position,
-        void * data, details::exchange_type type);
-    virtual void bind_by_name(std::string const & name,
-        void * data, details::exchange_type type);
+    postgresql_vector_use_type_backend(postgresql_statement_backend& st)
+        : statement_(st), data_(nullptr), type_(details::x_unknown), position_(0)  {}
+    virtual void bind_by_pos(int& position, void* data, details::exchange_type type);
+    virtual void bind_by_name(std::string const& name, void* data, details::exchange_type type);
 
     virtual void pre_use(indicator const * ind);
-
     virtual std::size_t size();
-
     virtual void clean_up();
 
-    postgresql_statement_backend & statement_;
-
-    void * data_;
+    postgresql_statement_backend& statement_;
+    std::vector<details::buffer_descriptor> buffers_;
+    void* data_;
+    std::string name_;
     details::exchange_type type_;
     int position_;
-    std::string name_;
-    std::vector<char *> buffers_;
 };
-
+    
 struct postgresql_session_backend;
 struct postgresql_statement_backend : details::statement_backend
 {
-    postgresql_statement_backend(postgresql_session_backend & session);
+    postgresql_statement_backend(postgresql_session_backend& session);
 
     virtual void alloc();
     virtual void clean_up();
-    virtual void prepare(std::string const & query,
-        details::statement_type stType);
+    virtual void prepare(std::string const& query, details::statement_type stType);
 
     virtual exec_fetch_result execute(int number);
     virtual exec_fetch_result fetch(int number);
@@ -156,24 +149,22 @@ struct postgresql_statement_backend : details::statement_backend
     virtual long long get_affected_rows();
     virtual int get_number_of_rows();
 
-    virtual std::string rewrite_for_procedure_call(std::string const & query);
+    virtual std::string rewrite_for_procedure_call(std::string const& query);
 
     virtual int prepare_for_describe();
-    virtual void describe_column(int colNum, data_type & dtype,
-        std::string & columnName);
+    virtual void describe_column(int colNum, data_type& dtype, std::string& columnName);
 
-    virtual postgresql_standard_into_type_backend * make_into_type_backend();
-    virtual postgresql_standard_use_type_backend * make_use_type_backend();
-    virtual postgresql_vector_into_type_backend * make_vector_into_type_backend();
+    virtual postgresql_standard_into_type_backend* make_into_type_backend();
+    virtual postgresql_standard_use_type_backend* make_use_type_backend();
+    virtual postgresql_vector_into_type_backend* make_vector_into_type_backend();
     virtual postgresql_vector_use_type_backend * make_vector_use_type_backend();
 
-    postgresql_session_backend & session_;
-
-    PGresult * result_;
-    std::string query_;
-    details::statement_type stType_;
-    std::string statementName_;
+    postgresql_session_backend& session_;
     std::vector<std::string> names_; // list of names for named binds
+    std::string query_;
+    std::string statementName_;
+    details::statement_type stType_;
+    PGresult* result_;
 
     int numberOfRows_;  // number of rows retrieved from the server
     int currentRow_;    // "current" row number to consume in postFetch
@@ -190,10 +181,10 @@ struct postgresql_statement_backend : details::statement_backend
     // the following maps are used for finding data buffers according to
     // use elements specified by the user
 
-    typedef std::map<int, char **> UseByPosBuffersMap;
+    typedef std::map<int, details::buffer_descriptor*> UseByPosBuffersMap;
     UseByPosBuffersMap useByPosBuffers_;
 
-    typedef std::map<std::string, char **> UseByNameBuffersMap;
+    typedef std::map<std::string, details::buffer_descriptor*> UseByNameBuffersMap;
     UseByNameBuffersMap useByNameBuffers_;
 };
 
@@ -209,19 +200,15 @@ struct postgresql_rowid_backend : details::rowid_backend
 struct postgresql_blob_backend : details::blob_backend
 {
     postgresql_blob_backend(postgresql_session_backend & session);
-
     ~postgresql_blob_backend();
 
     virtual std::size_t get_len();
-    virtual std::size_t read(std::size_t offset, char * buf,
-        std::size_t toRead);
-    virtual std::size_t write(std::size_t offset, char const * buf,
-        std::size_t toWrite);
-    virtual std::size_t append(char const * buf, std::size_t toWrite);
+    virtual std::size_t read(std::size_t offset, char* buf, std::size_t toRead);
+    virtual std::size_t write(std::size_t offset, char const* buf, std::size_t toWrite);
+    virtual std::size_t append(char const* buf, std::size_t toWrite);
     virtual void trim(std::size_t newLen);
 
-    postgresql_session_backend & session_;
-
+    postgresql_session_backend& session_;
     unsigned long oid_; // oid of the large object
     int fd_;            // descriptor of the large object
 };

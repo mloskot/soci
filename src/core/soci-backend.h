@@ -1,4 +1,6 @@
 //
+// Copyright (C) 2011 Mateusz Loskot <mateusz@loskot.net>
+// Copyright (C) 2011 Artur Bać
 // Copyright (C) 2004-2008 Maciej Sobczak, Stephen Hutton
 // Distributed under the Boost Software License, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at
@@ -33,11 +35,20 @@ namespace details
 // data types, as used to describe exchange format
 enum exchange_type
 {
-    x_char, x_stdstring,
-    x_short, x_integer,
-    x_unsigned_long, x_long_long, x_unsigned_long_long,
-    x_double, x_stdtm, x_statement,
-    x_rowid, x_blob, x_binary_string
+    x_unknown,
+    x_char,
+    x_stdstring,
+    x_short,
+    x_integer,
+    x_unsigned_long,
+    x_long_long,
+    x_unsigned_long_long,
+    x_double,
+    x_stdtm,
+    x_statement,
+    x_rowid,
+    x_blob,
+    x_binary_string
 };
 
 // type of statement (used for optimizing statement preparation)
@@ -231,6 +242,14 @@ private:
     // noncopyable
     session_backend(session_backend const&);
     session_backend& operator=(session_backend const&);
+};
+
+// Utility descriptor backends internally use for query data exchange.
+struct buffer_descriptor
+{
+	char* data; // weak reference, owned by client
+	size_t size;
+    bool binary;
 };
 
 } // namespace details

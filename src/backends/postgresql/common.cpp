@@ -10,7 +10,6 @@
 #include <cstdlib>
 #include <ctime>
 
-
 namespace // anonymous
 {
 
@@ -31,22 +30,19 @@ long parse10(char const * & p1, char * & p2, char const * msg)
 
 } // namespace anonymous
 
-
-void soci::details::postgresql::parse_std_tm(char const * buf, std::tm & t)
+void soci::details::postgresql::parse_std_tm(std::tm& t, char const* const buf)
 {
-    char const * p1 = buf;
-    char * p2;
-    char separator;
-    long a, b, c;
+    char const* p1 = buf;
+    char* p2(nullptr);
     long year = 1900, month = 1, day = 1;
     long hour = 0, minute = 0, second = 0;
 
-    char const * errMsg = "Cannot convert data to std::tm.";
+    char const* errMsg = "Cannot convert data to std::tm.";
 
-    a = parse10(p1, p2, errMsg);
-    separator = *p2;
-    b = parse10(p1, p2, errMsg);
-    c = parse10(p1, p2, errMsg);
+    long const a = parse10(p1, p2, errMsg);
+    char const separator = *p2;
+    long const b = parse10(p1, p2, errMsg);
+    long const c = parse10(p1, p2, errMsg);
 
     if (*p2 == ' ')
     {

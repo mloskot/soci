@@ -1,4 +1,6 @@
 //
+// Copyright (C) 2011 Mateusz Loskot
+// Copyright (C) 2011 Artur Bać
 // Copyright (C) 2004-2008 Maciej Sobczak, Stephen Hutton
 // Distributed under the Boost Software License, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at
@@ -7,9 +9,10 @@
 
 #define SOCI_POSTGRESQL_SOURCE
 #include "soci-postgresql.h"
-#include "error.h"
 #include <soci-platform.h>
 #include <libpq/libpq-fs.h> // libpq
+#include "error.h"
+#include <cassert>
 #include <cctype>
 #include <cstdio>
 #include <cstdlib>
@@ -29,11 +32,55 @@ using namespace soci;
 using namespace soci::details;
 using namespace soci::details::postgresql;
 
-postgresql_statement_backend::postgresql_statement_backend(
-    postgresql_session_backend &session)
-     : session_(session), result_(NULL), justDescribed_(false),
-       hasIntoElements_(false), hasVectorIntoElements_(false),
-       hasUseElements_(false), hasVectorUseElements_(false)
+namespace
+{
+    
+// TODO: make it option specified at run-time and compile-time
+int const postgresql_output_format = 1; // binary
+
+PGresult* execute_query(postgresql_session_backend& session, std::string const& query, int output_format,
+    std::vector<char*> const& values = std::vector<char*>(0),
+    std::vector<int> const& lenghts = std::vector<int>(0),
+    std::vector<int> const& formats = std::vector<int>(0))
+{
+    assert(0 != session.conn_ && CONNECTION_OK == PQstatus(session.conn_));
+
+    char* const* pvalues = values.empty() ? nullptr : &values[0];
+    int const* plengths = lenghts.empty() ? nullptr : &lenghts[0];
+    int const* pformats = formats.empty() ? nullptr : &formats[0];
+
+    return PQexecParams(session.conn_, query.c_str(), static_cast<int>(values.size()),
+        nullptr, pvalues, plengths, pformats, output_format);
+}
+
+PGresult* execute_statement(postgresql_session_backend& session, std::string const& statement, int output_format,
+    std::vector<char*> const& values = std::vector<char*>(0),
+    std::vector<int> const& lenghts = std::vector<int>(0),
+    std::vector<int> const& formats = std::vector<int>(0))
+{
+    assert(0 != session.conn_ && CONNECTION_OK == PQstatus(session.conn_));
+
+    char* const* pvalues = values.empty() ? nullptr : &values[0];
+    int const* plengths = lenghts.empty() ? nullptr : &lenghts[0];
+    int const* pformats = formats.empty() ? nullptr : &formats[0];
+
+    return PQexecParams(session.conn_, statement.c_str(), static_cast<int>(values.size()),
+        nullptr, pvalues, plengths, pformats, output_format);
+}
+
+} // unnamed namespace
+
+postgresql_statement_backend::postgresql_statement_backend(postgresql_session_backend &session)
+    : session_(session)
+    , result_(nullptr)
+    , numberOfRows_(-1)
+    , currentRow_(-1)
+    , rowsToConsume_(-1)
+    , justDescribed_(false)
+    , hasIntoElements_(false)
+    , hasVectorIntoElements_(false)
+    , hasUseElements_(false)
+    , hasVectorUseElements_(false)
 {
 }
 
@@ -44,15 +91,14 @@ void postgresql_statement_backend::alloc()
 
 void postgresql_statement_backend::clean_up()
 {
-    if (result_ != NULL)
+    if (nullptr != result_)
     {
         PQclear(result_);
-        result_ = NULL;
+        result_ = nullptr;
     }
 }
 
-void postgresql_statement_backend::prepare(std::string const & query,
-    statement_type stType)
+void postgresql_statement_backend::prepare(std::string const& query, statement_type stType)
 {
 #ifdef SOCI_POSTGRESQL_NOBINDBYNAME
     query_ = query;
@@ -65,8 +111,7 @@ void postgresql_statement_backend::prepare(std::string const & query,
     std::string name;
     int position = 1;
 
-    for (std::string::const_iterator it = query.begin(), end = query.end();
-         it != end; ++it)
+    for (std::string::const_iterator it = query.begin(), end = query.end(); it != end; ++it)
     {
         switch (state)
         {
@@ -175,9 +220,14 @@ void postgresql_statement_backend::prepare(std::string const & query,
 #endif // SOCI_POSTGRESQL_NOPREPARE
 }
 
-statement_backend::exec_fetch_result
-postgresql_statement_backend::execute(int number)
+statement_backend::exec_fetch_result postgresql_statement_backend::execute(int number)
 {
+    if (0 == number)
+    {
+        assert(!"when does it happen?");
+        return ef_success;
+    }
+
     // If the statement was "just described", then we know that
     // it was actually executed with all the use elements
     // already bound and pre-used. This means that the result of the
@@ -191,8 +241,7 @@ postgresql_statement_backend::execute(int number)
 
         if (number > 1 && hasIntoElements_)
         {
-             throw soci_error(
-                  "Bulk use with single into elements is not supported.");
+             throw soci_error("Bulk use with single into elements is not supported.");
         }
 
         // Since the bulk operations are not natively supported by postgresql_,
@@ -219,7 +268,9 @@ postgresql_statement_backend::execute(int number)
 
             for (int i = 0; i != numberOfExecutions; ++i)
             {
-                std::vector<char *> paramValues;
+                std::vector<char*> paramValues;
+                std::vector<int> paramLenghts;
+                std::vector<int> paramFormats;
 
                 if (useByPosBuffers_.empty() == false)
                 {
@@ -229,8 +280,10 @@ postgresql_statement_backend::execute(int number)
                     for (UseByPosBuffersMap::iterator it = useByPosBuffers_.begin(),
                          end = useByPosBuffers_.end(); it != end; ++it)
                     {
-                        char ** buffers = it->second;
-                        paramValues.push_back(buffers[i]);
+                        details::buffer_descriptor* buffer = it->second;
+                        paramValues.push_back(buffer[i].data);
+                        paramLenghts.push_back(static_cast<int>(buffer[i].size));
+                        paramFormats.push_back(buffer[i].binary ? 1 : 0);
                     }
                 }
                 else
@@ -248,43 +301,38 @@ postgresql_statement_backend::execute(int number)
                             msg += ").";
                             throw soci_error(msg);
                         }
-                        char ** buffers = b->second;
-                        paramValues.push_back(buffers[i]);
+
+                        details::buffer_descriptor* buffer = b->second;
+                        paramValues.push_back(buffer[i].data);
+                        paramLenghts.push_back(static_cast<int>(buffer[i].size));
+                        paramFormats.push_back(buffer[i].binary ? 1 : 0);
                     }
                 }
 
 #ifdef SOCI_POSTGRESQL_NOPARAMS
-
                 throw soci_error("Queries with parameters are not supported.");
-
 #else
-
-#ifdef SOCI_POSTGRESQL_NOPREPARE
-
-                result_ = PQexecParams(session_.conn_, query_.c_str(), static_cast<int>(paramValues.size()), NULL, &paramValues[0], NULL, NULL, 0);
-
-#else
-
+    #ifdef SOCI_POSTGRESQL_NOPREPARE
+                result_ = execute_query(session_, query_, paramValues, paramLenghts, paramFormats,
+                    postgresql_output_format);
+    #else
                 if (stType_ == st_repeatable_query)
                 {
                     // this query was separately prepared
-
-                    result_ = PQexecPrepared(session_.conn_, statementName_.c_str(), static_cast<int>(paramValues.size()), &paramValues[0], NULL, NULL, 0);
+                    result_ = execute_statement(session_, statementName_, postgresql_output_format,
+                        paramValues, paramLenghts, paramFormats);
                 }
                 else // stType_ == st_one_time_query
                 {
                     // this query was not separately prepared and should
                     // be executed as a one-time query
-
-                    result_ = PQexecParams(session_.conn_, query_.c_str(), static_cast<int>(paramValues.size()),
-                        NULL, &paramValues[0], NULL, NULL, 0);
+                    result_ = execute_query(session_, query_, postgresql_output_format,
+                        paramValues, paramLenghts, paramFormats);
                 }
-
-#endif // SOCI_POSTGRESQL_NOPREPARE
-
+    #endif // SOCI_POSTGRESQL_NOPREPARE
 #endif // SOCI_POSTGRESQL_NOPARAMS
 
-                if (result_ == NULL)
+                if (result_ == nullptr)
                 {
                     throw soci_error("Cannot execute query.");
                 }
@@ -292,7 +340,6 @@ postgresql_statement_backend::execute(int number)
                 if (numberOfExecutions > 1)
                 {
                     // there are only bulk use elements (no intos)
-
                     ExecStatusType status = PQresultStatus(result_);
                     if (status != PGRES_COMMAND_OK)
                     {
@@ -305,7 +352,7 @@ postgresql_statement_backend::execute(int number)
             if (numberOfExecutions > 1)
             {
                 // it was a bulk operation
-                result_ = NULL;
+                result_ = nullptr;
                 return ef_no_data;
             }
 
@@ -317,23 +364,18 @@ postgresql_statement_backend::execute(int number)
             // - execute the query without parameter information
 
 #ifdef SOCI_POSTGRESQL_NOPREPARE
-
             result_ = PQexec(session_.conn_, query_.c_str());
 #else
-
             if (stType_ == st_repeatable_query)
             {
                 // this query was separately prepared
 
-                result_ = PQexecPrepared(session_.conn_, statementName_.c_str(), 0, NULL, NULL, NULL, 0);
+                result_ = execute_statement(session_, statementName_, postgresql_output_format);
             }
             else // stType_ == st_one_time_query
             {
-                //result_ = PQexec(session_.conn_, query_.c_str());
-                int const is_binary_format = 1;
-                result_ = PQexecParams(session_.conn_, query_.c_str(), 0, 0, 0, 0, 0, is_binary_format);
+                result_ = execute_query(session_, query_, postgresql_output_format);
             }
-
 #endif // SOCI_POSTGRESQL_NOPREPARE
 
             if (result_ == NULL)

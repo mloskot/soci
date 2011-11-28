@@ -74,63 +74,65 @@ int main()
 
         // POINT
         {
-            // TODO: currently, binary format is requested only in simple case, no use() support
-            //int id(1);
-            //sql << "SELECT ST_AsBinary(geom) FROM soci_geoms WHERE id=:id", into(p0), use(id);
+            short id(1);
 
             point0_t p0;
-            sql << "SELECT ST_AsBinary(geom) FROM soci_geoms WHERE id=1", into(p0);
+            sql << "SELECT ST_AsBinary(geom) FROM soci_geoms WHERE id=:id", into(p0), use(id);
             clog << bg::wkt(p0) << std::endl;
 
             point1_t p1;
-            sql << "SELECT ST_AsBinary(geom) FROM soci_geoms WHERE id=1", into(p1);
+            sql << "SELECT ST_AsBinary(geom) FROM soci_geoms WHERE id=:id", into(p1), use(id);
             clog << bg::wkt(p1) << std::endl;
 
             point2_t p2;
-            sql << "SELECT ST_AsBinary(geom) FROM soci_geoms WHERE id=1", into(p2);
+            sql << "SELECT ST_AsBinary(geom) FROM soci_geoms WHERE id=:id", into(p2), use(id);
             clog << bg::wkt(p2) << std::endl;
         }
 
         // LINESTRING
         {
+            int id(2);
+
             bg::model::linestring<point0_t> line0;
-            sql << "SELECT ST_AsBinary(geom) FROM soci_geoms WHERE id=2", into(line0);
+            sql << "SELECT ST_AsBinary(geom) FROM soci_geoms WHERE id=:id", into(line0), use(id);
             clog << bg::wkt(line0) << std::endl;
 
             bg::model::linestring<point1_t> line1;
-            sql << "SELECT ST_AsBinary(geom) FROM soci_geoms WHERE id=2", into(line1);
+            sql << "SELECT ST_AsBinary(geom) FROM soci_geoms WHERE id=:id", into(line1), use(id);
             clog << bg::wkt(line1) << std::endl;
 
             bg::model::linestring<point2_t> line2;
-            sql << "SELECT ST_AsBinary(geom) FROM soci_geoms WHERE id=2", into(line2);
+            sql << "SELECT ST_AsBinary(geom) FROM soci_geoms WHERE id=:id", into(line2), use(id);
             clog << bg::wkt(line2) << std::endl;
 
             // std::deque as non-default container
             bg::model::linestring<point0_t, std::deque> deque0;
-            sql << "SELECT ST_AsBinary(geom) FROM soci_geoms WHERE id=2", into(deque0);
+            sql << "SELECT ST_AsBinary(geom) FROM soci_geoms WHERE id=:id", into(deque0), use(id);
             clog << bg::wkt(deque0) << std::endl;
 
             bg::model::linestring<point1_t, std::deque> deque1;
-            sql << "SELECT ST_AsBinary(geom) FROM soci_geoms WHERE id=2", into(deque1);
+            sql << "SELECT ST_AsBinary(geom) FROM soci_geoms WHERE id=:id", into(deque1), use(id);
             clog << bg::wkt(deque1) << std::endl;
 
             bg::model::linestring<point2_t, std::deque> deque2;
-            sql << "SELECT ST_AsBinary(geom) FROM soci_geoms WHERE id=2", into(deque2);
+            sql << "SELECT ST_AsBinary(geom) FROM soci_geoms WHERE id=:id", into(deque2), use(id);
             clog << bg::wkt(deque2) << std::endl;
         }
 
         // POLYGON
         {
+            long long id(3);
+
             bg::model::polygon<point0_t> poly0;
-            sql << "SELECT ST_AsBinary(geom) FROM soci_geoms WHERE id=3", into(poly0);
+            sql << "SELECT ST_AsBinary(geom) FROM soci_geoms WHERE id=:id", into(poly0), use(id);
             clog << bg::wkt(poly0) << std::endl;
 
             bg::model::polygon<point1_t> poly1;
-            sql << "SELECT ST_AsBinary(geom) FROM soci_geoms WHERE id=3", into(poly1);
+            sql << "SELECT ST_AsBinary(geom) FROM soci_geoms WHERE id=:id", into(poly1), use(id);
             clog << bg::wkt(poly1) << std::endl;
 
             bg::model::polygon<point2_t> poly2;
-            sql << "SELECT ST_AsBinary(geom) FROM soci_geoms WHERE id=3", into(poly2);
+            sql << "SELECT ST_AsBinary(geom) FROM soci_geoms WHERE id=:id", into(poly2), use(id);
             clog << bg::wkt(poly2) << std::endl;
         }
     }

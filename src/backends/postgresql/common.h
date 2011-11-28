@@ -116,7 +116,7 @@ T string_to_unsigned_integer(char const * buf)
 double string_to_double(char const * buf);
 
 // helper function for parsing datetime values
-void parse_std_tm(char const * buf, std::tm & t);
+void parse_std_tm(std::tm& dest, char const* const src);
 
 // helper for vector operations
 template <typename T>

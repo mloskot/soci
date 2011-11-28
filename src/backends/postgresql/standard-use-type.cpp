@@ -52,94 +52,95 @@ void postgresql_standard_use_type_backend::bind_by_name(
     name_ = name;
 }
 
-void postgresql_standard_use_type_backend::pre_use(indicator const * ind)
+void postgresql_standard_use_type_backend::pre_use(indicator const* ind)
 {
-    if (ind != NULL && *ind == i_null)
+    buf_.data = nullptr;
+    buf_.size = 0;
+    buf_.binary = false;
+
+    if (nullptr != ind && *ind == i_null)
     {
-        // leave the working buffer as NULL
+        // leave the working buffer as empty
     }
     else
     {
         // allocate and fill the buffer with text-formatted client data
         switch (type_)
         {
+            // TODO: merge with soci-type-bool branch
+            //case x_bool:
+            //    {
+            //        buf_.size = 2;
+            //        buf_.data = new char[buf_.size];
+            //        buf_.data[0] = (*static_cast<bool *>(data_) ) ? '1' : '0'; 
+            //        buf_.data[1] = '\0'; 
+            //    }
+            //    break;
         case x_char:
             {
-                buf_ = new char[2];
-                buf_[0] = *static_cast<char *>(data_);
-                buf_[1] = '\0';
+                buf_.size = 2;
+                buf_.data = new char[buf_.size];
+                buf_.data[0] = *static_cast<char *>(data_);
+                buf_.data[1] = '\0';
             }
             break;
         case x_stdstring:
             {
-                std::string * s = static_cast<std::string *>(data_);
-                buf_ = new char[s->size() + 1];
-                std::strcpy(buf_, s->c_str());
+                std::string* s = static_cast<std::string*>(data_);
+                buf_.size = s->size() + 1;
+                buf_.data = new char[buf_.size];
+                std::strcpy(buf_.data, s->c_str());
             }
             break;
         case x_short:
             {
-                std::size_t const bufSize
-                    = std::numeric_limits<short>::digits10 + 3;
-                buf_ = new char[bufSize];
-                snprintf(buf_, bufSize, "%d",
-                    static_cast<int>(*static_cast<short *>(data_)));
+                buf_.size = std::numeric_limits<short>::digits10 + 3;
+                buf_.data = new char[buf_.size];
+                snprintf(buf_.data, buf_.size, "%d", static_cast<int>(*static_cast<short *>(data_)));
             }
             break;
         case x_integer:
             {
-                std::size_t const bufSize
-                    = std::numeric_limits<int>::digits10 + 3;
-                buf_ = new char[bufSize];
-                snprintf(buf_, bufSize, "%d",
-                    *static_cast<int *>(data_));
+                buf_.size = std::numeric_limits<int>::digits10 + 3;
+                buf_.data = new char[buf_.size];
+                snprintf(buf_.data, buf_.size, "%d", *static_cast<int*>(data_));
             }
             break;
         case x_unsigned_long:
             {
-                std::size_t const bufSize
-                    = std::numeric_limits<unsigned long>::digits10 + 2;
-                buf_ = new char[bufSize];
-                snprintf(buf_, bufSize, "%lu",
-                    *static_cast<unsigned long *>(data_));
+                buf_.size = std::numeric_limits<unsigned long>::digits10 + 2;
+                buf_.data = new char[buf_.size];
+                snprintf(buf_.data, buf_.size, "%lu", *static_cast<unsigned long *>(data_));
             }
             break;
         case x_long_long:
             {
-                std::size_t const bufSize
-                    = std::numeric_limits<long long>::digits10 + 3;
-                buf_ = new char[bufSize];
-                snprintf(buf_, bufSize, "%lld",
-                    *static_cast<long long *>(data_));
+                buf_.size = std::numeric_limits<long long>::digits10 + 3;
+                buf_.data = new char[buf_.size];
+                snprintf(buf_.data, buf_.size, "%lld", *static_cast<long long *>(data_));
             }
             break;
         case x_unsigned_long_long:
             {
-                std::size_t const bufSize
-                    = std::numeric_limits<unsigned long long>::digits10 + 2;
-                buf_ = new char[bufSize];
-                snprintf(buf_, bufSize, "%llu",
-                    *static_cast<unsigned long long *>(data_));
+                buf_.size = std::numeric_limits<unsigned long long>::digits10 + 2;
+                buf_.data = new char[buf_.size];
+                snprintf(buf_.data, buf_.size, "%llu", *static_cast<unsigned long long *>(data_));
             }
             break;
         case x_double:
             {
                 // no need to overengineer it (KISS)...
-
-                std::size_t const bufSize = 100;
-                buf_ = new char[bufSize];
-
-                snprintf(buf_, bufSize, "%.20g",
-                    *static_cast<double *>(data_));
+                buf_.size = 100;
+                buf_.data = new char[buf_.size];
+                snprintf(buf_.data, buf_.size, "%.20g", *static_cast<double *>(data_));
             }
             break;
         case x_stdtm:
             {
-                std::size_t const bufSize = 20;
-                buf_ = new char[bufSize];
-
-                std::tm * t = static_cast<std::tm *>(data_);
-                snprintf(buf_, bufSize, "%d-%02d-%02d %02d:%02d:%02d",
+                buf_.size = 20;
+                buf_.data = new char[buf_.size];
+                std::tm* t = static_cast<std::tm *>(data_);
+                snprintf(buf_.data, buf_.size, "%d-%02d-%02d %02d:%02d:%02d",
                     t->tm_year + 1900, t->tm_mon + 1, t->tm_mday,
                     t->tm_hour, t->tm_min, t->tm_sec);
             }
@@ -147,32 +148,26 @@ void postgresql_standard_use_type_backend::pre_use(indicator const * ind)
         case x_rowid:
             {
                 // RowID is internally identical to unsigned long
+                rowid* rid = static_cast<rowid*>(data_);
+                postgresql_rowid_backend* rbe =
+                    static_cast<postgresql_rowid_backend*>(rid->get_backend());
 
-                rowid * rid = static_cast<rowid *>(data_);
-                postgresql_rowid_backend * rbe
-                    = static_cast<postgresql_rowid_backend *>(
-                        rid->get_backend());
+                buf_.size = std::numeric_limits<unsigned long>::digits10 + 2;
+                buf_.data = new char[buf_.size];
 
-                std::size_t const bufSize
-                    = std::numeric_limits<unsigned long>::digits10 + 2;
-                buf_ = new char[bufSize];
-
-                snprintf(buf_, bufSize, "%lu", rbe->value_);
+                snprintf(buf_.data, buf_.size, "%lu", rbe->value_);
             }
             break;
         case x_blob:
             {
-                blob * b = static_cast<blob *>(data_);
-                postgresql_blob_backend * bbe =
-                    static_cast<postgresql_blob_backend *>(b->get_backend());
+                blob* b = static_cast<blob*>(data_);
+                postgresql_blob_backend* bbe = static_cast<postgresql_blob_backend*>(b->get_backend());
 
-                std::size_t const bufSize
-                    = std::numeric_limits<unsigned long>::digits10 + 2;
-                buf_ = new char[bufSize];
-                snprintf(buf_, bufSize, "%lu", bbe->oid_);
+                buf_.size = std::numeric_limits<unsigned long>::digits10 + 2;
+                buf_.data = new char[buf_.size];
+                snprintf(buf_.data, buf_.size, "%lu", bbe->oid_);
             }
             break;
-
         default:
             throw soci_error("Use element used with non-supported type.");
         }
@@ -190,8 +185,7 @@ void postgresql_standard_use_type_backend::pre_use(indicator const * ind)
     }
 }
 
-void postgresql_standard_use_type_backend::post_use(
-    bool /* gotData */, indicator * /* ind */)
+void postgresql_standard_use_type_backend::post_use(bool /*gotData*/, indicator* /*ind*/)
 {
     // PostgreSQL does not support any data moving back the same channel,
     // so there is nothing to do here.
@@ -205,9 +199,11 @@ void postgresql_standard_use_type_backend::post_use(
 
 void postgresql_standard_use_type_backend::clean_up()
 {
-    if (buf_ != NULL)
+    if (nullptr != buf_.data)
     {
-        delete [] buf_;
-        buf_ = NULL;
+        delete [] buf_.data;
+        buf_.data = nullptr;
+        buf_.size = 0;
+        buf_.binary = false;
     }
 }
